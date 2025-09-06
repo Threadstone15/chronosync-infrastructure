@@ -30,6 +30,7 @@ services:
       - NET_ADMIN
     networks:
       - internal_net
+      - macvlan_net
     command: ["--no-daemon"]
 
   ntp:
@@ -67,8 +68,10 @@ services:
     networks:
       - internal_net
       - it_net
+      - macvlan_net
     labels:
       - "role=app"
+      - "network=macvlan"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
       interval: 10s
@@ -172,3 +175,12 @@ networks:
     driver: bridge
   it_net:
     driver: bridge
+  macvlan_net:
+    driver: macvlan
+    driver_opts:
+      parent: ${MACVLAN_PARENT_INTERFACE:-eth0}  # Default to eth0, override in .env
+    ipam:
+      config:
+        - subnet: ${MACVLAN_SUBNET:-192.168.1.0/24}
+          gateway: ${MACVLAN_GATEWAY:-192.168.1.1}
+          ip_range: ${MACVLAN_IP_RANGE:-192.168.1.100/28}

@@ -110,6 +110,44 @@ SSH_AUTH_SOCK=$SSH_AUTH_SOCK docker compose up --build builder
 
 - **internal_net**: Private bridge network for service communication
 - **it_net**: IT network bridge for management services
+- **macvlan_net**: MacVlan network for direct layer-2 host network access (optional)
+
+## MacVlan Network Support
+
+### Overview
+
+The infrastructure supports optional MacVlan networking for true layer-2 network integration:
+
+- **Direct host network access**: Containers get IP addresses from your network DHCP
+- **Real DHCP functionality**: dnsmasq provides DHCP services to the physical network
+- **Enhanced network integration**: Containers appear as physical devices on your network
+
+### Setup MacVlan
+
+```bash
+# Auto-detect and configure network interface
+./scripts/setup-macvlan.sh
+
+# Or manually edit .env file:
+MACVLAN_PARENT_INTERFACE=eth0
+MACVLAN_SUBNET=192.168.1.0/24
+MACVLAN_GATEWAY=192.168.1.1
+MACVLAN_IP_RANGE=192.168.1.100/28
+```
+
+### Test MacVlan
+
+```bash
+# Test MacVlan functionality
+./scripts/test-macvlan.sh
+```
+
+### MacVlan Limitations
+
+- **Docker Desktop**: Limited support on Windows/macOS
+- **VM environments**: May require special configuration
+- **Cloud providers**: Often block MacVlan traffic
+- **Host access**: Host cannot directly reach MacVlan containers
 
 ## Environment Configuration
 
@@ -126,6 +164,12 @@ DHCP_RANGE_START=192.168.77.50
 DHCP_RANGE_END=192.168.77.150
 DHCP_NETMASK=255.255.255.0
 DNS_DOMAIN=localdomain
+
+# MacVlan Network Configuration (optional)
+MACVLAN_PARENT_INTERFACE=eth0
+MACVLAN_SUBNET=192.168.1.0/24
+MACVLAN_GATEWAY=192.168.1.1
+MACVLAN_IP_RANGE=192.168.1.100/28
 ```
 
 ## Security Considerations

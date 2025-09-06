@@ -17,6 +17,9 @@ help:
 	@echo "  build     - Build all Docker images"
 	@echo "  status    - Show status of all services"
 	@echo ""
+	@echo "  setup-macvlan - Configure MacVlan networking"
+	@echo "  test-macvlan  - Test MacVlan functionality"
+	@echo ""
 	@echo "  app1-logs - Show logs for app1"
 	@echo "  app2-logs - Show logs for app2" 
 	@echo "  app3-logs - Show logs for app3"
@@ -129,3 +132,28 @@ network-info:
 	@echo ""
 	@echo "Container network information:"
 	@docker compose ps --format "table {{.Name}}\t{{.Networks}}"
+
+# MacVlan setup and testing
+setup-macvlan:
+	@if [ -f scripts/setup-macvlan.sh ]; then \
+		chmod +x scripts/setup-macvlan.sh; \
+		./scripts/setup-macvlan.sh; \
+	else \
+		echo "MacVlan setup script not found"; \
+	fi
+
+test-macvlan:
+	@if [ -f scripts/test-macvlan.sh ]; then \
+		chmod +x scripts/test-macvlan.sh; \
+		./scripts/test-macvlan.sh; \
+	else \
+		echo "MacVlan test script not found"; \
+	fi
+
+# Show MacVlan network information
+macvlan-info:
+	@echo "MacVlan network details:"
+	@docker network inspect chronosync-infrastructure_macvlan_net 2>/dev/null || echo "MacVlan network not found"
+	@echo ""
+	@echo "Containers on MacVlan network:"
+	@docker ps --format "table {{.Names}}\t{{.Networks}}" | grep macvlan || echo "No containers on MacVlan network"
