@@ -1,0 +1,13 @@
+name: Build and Test Images
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker images
+        run: |
+          docker build -t infra-app ./app
+          docker build -t infra-builder ./builder
+      - name: Run basic lint tests
+        run: echo "Add tests here"

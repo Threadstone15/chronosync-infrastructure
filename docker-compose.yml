@@ -1,0 +1,174 @@
+version: '3.8'
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    networks:
+      - internal_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dnsmasq:
+    image: andyshinn/dnsmasq:2.78
+    container_name: dnsmasq
+    volumes:
+      - dnsmasq_data:/data
+      - ./dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf:ro
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - internal_net
+    command: ["--no-daemon"]
+
+  ntp:
+    image: cturra/ntp:alpine
+    container_name: ntp_server
+    volumes:
+      - ntp_data:/var/lib/ntpd
+      - ./ntp/chrony.conf:/etc/chrony/chrony.conf:ro
+    networks:
+      - internal_net
+
+  builder:
+    build: ./builder
+    container_name: builder
+    volumes:
+      - builder_cache:/builder_cache
+      - app1_data:/app1_dist
+      - app2_data:/app2_dist
+      - app3_data:/app3_dist
+      - /var/run/docker.sock:/var/run/docker.sock # optional for docker-in-docker actions
+      - $SSH_AUTH_SOCK:/ssh-agent # ssh-agent forwarding - document how to run
+    environment:
+      - SSH_AUTH_SOCK=/ssh-agent
+    networks:
+      - internal_net
+    entrypoint: ["/bin/sh", "/builder/build-and-deploy.sh"]
+
+  app1:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app1
+    volumes:
+      - app1_data:/usr/share/nginx/html:ro
+    networks:
+      - internal_net
+      - it_net
+    labels:
+      - "role=app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  app2:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app2
+    volumes:
+      - app2_data:/usr/share/nginx/html:ro
+    networks:
+      - internal_net
+      - it_net
+    labels:
+      - "role=app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  app3:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: app3
+    volumes:
+      - app3_data:/usr/share/nginx/html:ro
+    networks:
+      - internal_net
+      - it_net
+    labels:
+      - "role=app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nginx_north:
+    image: nginx:alpine
+    container_name: nginx_north
+    volumes:
+      - ./nginx/north.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"   # map north to host 8080 for testing HTTP
+      - "8443:443"  # reserved for TLS if configured later
+    networks:
+      - it_net
+      - internal_net
+    depends_on:
+      - app1
+      - app2
+      - app3
+    healthcheck:
+      test: ["CMD", "pidof", "nginx" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nginx_south:
+    image: nginx:alpine
+    container_name: nginx_south
+    volumes:
+      - ./nginx/south.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - internal_net
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "pidof", "nginx" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  iptables-setup:
+    image: alpine:latest
+    container_name: iptables_setup
+    volumes:
+      - ./iptables/iptables.sh:/iptables.sh:ro
+    cap_add:
+      - NET_ADMIN
+    network_mode: "host"
+    entrypoint: ["/bin/sh", "/iptables.sh"]
+    restart: "no"
+
+volumes:
+  mysql_data:
+  dnsmasq_data:
+  ntp_data:
+  builder_cache:
+  app1_data:
+  app2_data:
+  app3_data:
+
+networks:
+  internal_net:
+    driver: bridge
+  it_net:
+    driver: bridge

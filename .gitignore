@@ -1,0 +1,46 @@
+# Environment files
+.env
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfvars
+terraform/example_deploy_note.txt
+
+# Build artifacts
+dist/
+build/
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+
+# SSH keys (never commit these)
+*.pem
+*.key
+id_rsa*
+
+# Backup files
+*.bak
+*.backup
