@@ -1,0 +1,29 @@
+# Docker Compose Override for Windows
+# This file provides Windows-compatible configuration
+# Use with: docker compose -f docker-compose.yml -f docker-compose.windows.yml up
+
+version: '3.8'
+services:
+  builder:
+    volumes:
+      - builder_cache:/builder_cache
+      - app1_data:/app1_dist
+      - app2_data:/app2_dist
+      - app3_data:/app3_dist
+      # SSH agent forwarding disabled for Windows compatibility
+    environment:
+      - SKIP_SSH=true
+    # Remove problematic SSH_AUTH_SOCK reference
+
+  # For Windows Docker Desktop, you may need to adjust MacVlan settings
+  # or disable MacVlan network entirely if not supported
+  dnsmasq:
+    networks:
+      - internal_net
+      # macvlan_net may not work on Windows Docker Desktop
+
+  app1:
+    networks:
+      - internal_net
+      - it_net
+      # macvlan_net may not work on Windows Docker Desktop
